@@ -1,0 +1,2292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VitalLink Health Monitor</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f7f6;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        /* Login Page Styles */
+        .login-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #3498db, #2c3e50);
+        }
+
+        .login-box {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            width: 400px;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .login-logo {
+            font-size: 2.5em;
+            color: #3498db;
+            margin-bottom: 20px;
+        }
+
+        .login-title {
+            color: #2c3e50;
+            margin-bottom: 30px;
+            font-size: 1.8em;
+        }
+
+        .role-selector {
+            display: flex;
+            margin-bottom: 20px;
+            border-radius: 5px;
+            overflow: hidden;
+            border: 1px solid #ddd;
+        }
+
+        .role-option {
+            flex: 1;
+            padding: 12px;
+            background-color: #f8f9fa;
+            cursor: pointer;
+            transition: all 0.3s;
+            border-right: 1px solid #ddd;
+        }
+
+        .role-option:last-child {
+            border-right: none;
+        }
+
+        .role-option.active {
+            background-color: #3498db;
+            color: white;
+        }
+
+        .role-option i {
+            margin-right: 8px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 500;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+
+        .form-control:focus {
+            border-color: #3498db;
+            outline: none;
+        }
+
+        .btn-login {
+            width: 100%;
+            padding: 12px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            margin-top: 10px;
+        }
+
+        .btn-login:hover {
+            background-color: #2980b9;
+        }
+
+        .login-footer {
+            margin-top: 20px;
+            color: #777;
+            font-size: 0.9em;
+        }
+
+        .register-link {
+            margin-top: 15px;
+            color: #3498db;
+            cursor: pointer;
+            text-decoration: underline;
+            font-size: 0.9em;
+            padding: 10px;
+            display: block;
+        }
+
+        .register-link:hover {
+            color: #2980b9;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+        }
+
+        .success-message {
+            background-color: #27ae60;
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .error-message {
+            background-color: #e74c3c;
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .loading {
+            color: #3498db;
+            text-align: center;
+            padding: 10px;
+        }
+
+        /* Dashboard Styles */
+        .dashboard-container {
+            display: none;
+            width: 100%;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            width: 250px;
+            background-color: #2c3e50;
+            color: #ecf0f1;
+            padding: 20px;
+            box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+        }
+
+        .sidebar .logo {
+            font-size: 1.8em;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 30px;
+            color: #3498db;
+        }
+
+        .sidebar .logo i {
+            margin-right: 10px;
+        }
+
+        .sidebar .main-nav ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .sidebar .main-nav li {
+            margin-bottom: 10px;
+        }
+
+        .sidebar .main-nav a {
+            color: #ecf0f1;
+            text-decoration: none;
+            padding: 12px 15px;
+            display: block;
+            border-radius: 5px;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .sidebar .main-nav a:hover,
+        .sidebar .main-nav li.active a {
+            background-color: #34495e;
+            color: #3498db;
+        }
+
+        .sidebar .main-nav i {
+            margin-right: 10px;
+            width: 20px;
+        }
+
+        .user-profile-sidebar {
+            margin-top: auto;
+            padding-top: 20px;
+            border-top: 1px solid #34495e;
+            text-align: center;
+        }
+
+        .user-profile-sidebar h3 {
+            color: #3498db;
+            margin-bottom: 10px;
+        }
+
+        .user-profile-sidebar p {
+            font-size: 0.9em;
+            margin-bottom: 5px;
+        }
+
+        .main-content {
+            flex-grow: 1;
+            padding: 30px;
+            margin-left: 250px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .dashboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .dashboard-header h2 {
+            margin: 0;
+            color: #2c3e50;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .btn-logout {
+            background-color: #e74c3c;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: background-color 0.3s;
+        }
+
+        .btn-logout:hover {
+            background-color: #c0392b;
+        }
+
+        .alert-banner {
+            background-color: #e74c3c;
+            color: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-weight: bold;
+            animation: pulse 1.5s infinite;
+        }
+
+        .alert-banner i {
+            margin-right: 15px;
+            font-size: 1.2em;
+        }
+
+        .alert-banner.hidden {
+            display: none;
+        }
+
+        .close-alert-btn {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.5em;
+            cursor: pointer;
+            margin-left: 20px;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.01); }
+            100% { transform: scale(1); }
+        }
+
+        .vital-signs-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+
+        .vital-card {
+            background-color: #ffffff;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            text-align: center;
+            transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+        }
+
+        .vital-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        }
+
+        .vital-card .vital-icon {
+            font-size: 2.5em;
+            color: #3498db;
+            margin-bottom: 15px;
+        }
+
+        .vital-card h3 {
+            margin-top: 0;
+            color: #2c3e50;
+            font-size: 1.2em;
+        }
+
+        .vital-value {
+            font-size: 2.5em;
+            font-weight: bold;
+            margin: 10px 0;
+            color: #333;
+        }
+
+        .vital-value small {
+            font-size: 0.5em;
+            font-weight: normal;
+        }
+
+        .vital-status {
+            font-weight: bold;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+        }
+
+        .last-update {
+            font-size: 0.8em;
+            color: #7f8c8d;
+        }
+
+        .vital-card.normal .vital-icon, .vital-card.normal .vital-status { color: #27ae60; }
+        .vital-card.warning .vital-icon, .vital-card.warning .vital-status { color: #f39c12; }
+        .vital-card.critical .vital-icon, .vital-card.critical .vital-status { color: #e74c3c; }
+
+        .historical-trends {
+            background-color: #ffffff;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            margin-bottom: 40px;
+        }
+
+        .historical-trends h3 {
+            margin-top: 0;
+            color: #2c3e50;
+            margin-bottom: 20px;
+        }
+
+        .chart-controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            align-items: center;
+        }
+
+        .chart-controls label {
+            font-weight: bold;
+            color: #555;
+        }
+
+        .chart-controls select {
+            padding: 8px 12px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            background-color: white;
+            font-size: 1em;
+            cursor: pointer;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 350px;
+            width: 100%;
+        }
+
+        .recent-alerts {
+            background-color: #ffffff;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+
+        .recent-alerts h3 {
+            margin-top: 0;
+            color: #2c3e50;
+            margin-bottom: 20px;
+        }
+
+        #alerts-list {
+            list-style: none;
+            padding: 0;
+            margin: 0 0 20px 0;
+        }
+
+        #alerts-list li {
+            background-color: #f9f9f9;
+            border: 1px solid #eee;
+            padding: 10px 15px;
+            margin-bottom: 8px;
+            border-radius: 5px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            font-size: 0.95em;
+        }
+
+        .alert-time {
+            color: #7f8c8d;
+            font-size: 0.85em;
+            flex-shrink: 0;
+        }
+
+        .alert-type {
+            font-weight: bold;
+        }
+
+        .alert-type.critical { color: #e74c3c; }
+        .alert-type.warning { color: #f39c12; }
+        .alert-type.normal { color: #27ae60; }
+
+        .btn-primary {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: background-color 0.3s;
+            margin-top: 15px;
+        }
+
+        .btn-primary:hover {
+            background-color: #2980b9;
+        }
+
+        .btn-secondary {
+            background-color: #95a5a6;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: background-color 0.3s;
+        }
+
+        .btn-secondary:hover {
+            background-color: #7f8c8d;
+        }
+
+        /* Role-specific content */
+        .admin-content, .doctor-content, .patient-content {
+            display: none;
+        }
+
+        /* Connection status */
+        .connection-status {
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+
+        .connection-status.connected {
+            background-color: #27ae60;
+            color: white;
+        }
+
+        .connection-status.disconnected {
+            background-color: #e74c3c;
+            color: white;
+        }
+
+        .connection-status.connecting {
+            background-color: #f39c12;
+            color: white;
+        }
+
+        /* Health Prediction Styles */
+        .health-prediction {
+            background-color: #ffffff;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            margin-bottom: 40px;
+        }
+
+        .health-prediction h3 {
+            margin-top: 0;
+            color: #2c3e50;
+            margin-bottom: 20px;
+        }
+
+        .prediction-card {
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-left: 5px solid #3498db;
+        }
+
+        .prediction-card h4 {
+            margin-top: 0;
+            color: #2c3e50;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .prediction-card p {
+            margin: 10px 0;
+            line-height: 1.6;
+        }
+
+        .prediction-card.warning {
+            border-left-color: #f39c12;
+            background-color: #fef9e7;
+        }
+
+        .prediction-card.critical {
+            border-left-color: #e74c3c;
+            background-color: #fdedec;
+        }
+
+        .prediction-card.normal {
+            border-left-color: #27ae60;
+            background-color: #eafaf1;
+        }
+
+        .prediction-risk {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 0.8em;
+            margin-top: 10px;
+        }
+
+        .risk-low {
+            background-color: #27ae60;
+            color: white;
+        }
+
+        .risk-medium {
+            background-color: #f39c12;
+            color: white;
+        }
+
+        .risk-high {
+            background-color: #e74c3c;
+            color: white;
+        }
+
+        .prediction-chart-container {
+            position: relative;
+            height: 250px;
+            width: 100%;
+            margin-top: 20px;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 100%;
+                height: auto;
+                position: relative;
+                margin-left: 0;
+            }
+            
+            .main-content {
+                margin-left: 0;
+            }
+            
+            .dashboard-container {
+                flex-direction: column;
+            }
+
+            .sidebar {
+                padding: 15px;
+                flex-direction: row;
+                justify-content: space-between;
+                align-items: center;
+                flex-wrap: wrap;
+            }
+
+            .sidebar .logo {
+                margin-bottom: 0;
+                text-align: left;
+            }
+
+            .sidebar .main-nav {
+                display: none;
+            }
+
+            .user-profile-sidebar {
+                margin-top: 0;
+                padding-top: 0;
+                border-top: none;
+                text-align: right;
+            }
+
+            .dashboard-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .header-right {
+                margin-top: 15px;
+                width: 100%;
+                justify-content: flex-end;
+            }
+
+            .vital-signs-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .chart-controls {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Login Page -->
+    <div class="login-container" id="login-page">
+        <div class="login-box">
+            <div class="login-logo">
+                <i class="fas fa-heartbeat"></i> VitalLink
+            </div>
+            <h2 class="login-title">Sign In</h2>
+            
+            <div id="login-message"></div>
+            
+            <div class="role-selector">
+                <div class="role-option active" data-role="patient">
+                    <i class="fas fa-user"></i> Patient
+                </div>
+                <div class="role-option" data-role="doctor">
+                    <i class="fas fa-user-md"></i> Doctor
+                </div>
+                <div class="role-option" data-role="admin">
+                    <i class="fas fa-cog"></i> Admin
+                </div>
+            </div>
+            
+            <form id="login-form">
+                <div class="form-group">
+                    <label for="username">Email</label>
+                    <input type="email" id="username" class="form-control" placeholder="Enter your email" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" class="form-control" placeholder="Enter your password" required>
+                </div>
+                
+                <button type="submit" class="btn-login">Sign In</button>
+            </form>
+
+            <!-- REGISTER LINK -->
+            <div class="register-link" id="show-register" onclick="showRegisterForm()">
+                <i class="fas fa-user-plus"></i> Don't have an account? Register here
+            </div>
+            
+            <div class="login-footer">
+                <p><strong>Demo credentials:</strong></p>
+                <p>Patient: patient@test.com / pass123</p>
+                <p>Doctor: doctor@test.com / pass123</p>
+                <p>Admin: admin@test.com / pass123</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Registration Page -->
+    <div class="login-container" id="register-page" style="display: none;">
+        <div class="login-box">
+            <div class="login-logo">
+                <i class="fas fa-heartbeat"></i> VitalLink
+            </div>
+            <h2 class="login-title">Register</h2>
+            
+            <div id="register-message"></div>
+            
+            <form id="register-form">
+                <div class="form-group">
+                    <label for="reg-name">Full Name</label>
+                    <input type="text" id="reg-name" class="form-control" placeholder="Enter your full name" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="reg-email">Email</label>
+                    <input type="email" id="reg-email" class="form-control" placeholder="Enter your email" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="reg-password">Password</label>
+                    <input type="password" id="reg-password" class="form-control" placeholder="Enter your password (min 6 characters)" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="reg-role">Role</label>
+                    <select id="reg-role" class="form-control" required>
+                        <option value="patient">Patient</option>
+                        <option value="doctor">Doctor</option>
+                        <option value="admin">Admin</option>
+                    </select>
+                </div>
+                
+                <button type="submit" class="btn-login">Create Account</button>
+            </form>
+
+            <div class="register-link" id="show-login" onclick="showLoginForm()">
+                <i class="fas fa-sign-in-alt"></i> Already have an account? Sign in here
+            </div>
+        </div>
+    </div>
+
+    <!-- Dashboard (Initially Hidden) -->
+    <div class="dashboard-container" id="dashboard">
+        <aside class="sidebar">
+            <div class="logo">
+                <i class="fas fa-heartbeat"></i> VitalLink
+            </div>
+            <nav class="main-nav">
+                <ul>
+                    <li class="active"><a href="#" data-section="dashboard"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+                    <li class="patient-only"><a href="#" data-section="health-prediction"><i class="fas fa-brain"></i> Health Prediction</a></li>
+                    <li class="patient-only"><a href="#" data-section="alert-history"><i class="fas fa-bell"></i> Alert History</a></li>
+                    <li class="patient-only"><a href="#" data-section="reports"><i class="fas fa-chart-line"></i> Reports</a></li>
+                    <li class="doctor-only admin-only"><a href="#" data-section="patients"><i class="fas fa-users"></i> Patients</a></li>
+                    <li class="doctor-only admin-only"><a href="#" data-section="settings"><i class="fas fa-cog"></i> Settings</a></li>
+                </ul>
+            </nav>
+            <div class="user-profile-sidebar" id="user-profile">
+                <!-- User profile will be populated dynamically -->
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="dashboard-header">
+                <h2 id="dashboard-title">Patient Health Overview</h2>
+                <div class="header-right">
+                    <span id="welcome-message">Welcome, User</span>
+                    <span id="connection-status" class="connection-status connecting">
+                        <i class="fas fa-sync-alt"></i> Connecting...
+                    </span>
+                    <button class="btn-logout" id="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</button>
+                </div>
+            </header>
+
+            <!-- Patient Dashboard Content -->
+            <div class="patient-content" id="patient-content">
+                <!-- Dashboard Section -->
+                <div class="patient-section" id="dashboard-section">
+                    <div style="text-align: center; margin: 10px 0;">
+                        <button class="btn-primary" onclick="refreshData()" style="margin: 10px;">
+                            <i class="fas fa-sync-alt"></i> Refresh Data
+                        </button>
+                    </div>
+
+                    <div id="alert-banner" class="alert-banner hidden">
+                        <i class="fas fa-exclamation-triangle"></i> 
+                        <span id="alert-message">CRITICAL ALERT! High Heart Rate Detected: 110 BPM (3:45 PM) - Check Patient NOW!</span>
+                        <button class="close-alert-btn" onclick="closeAlert()">&times;</button>
+                    </div>
+
+                    <section class="vital-signs-grid">
+                        <div class="vital-card normal" id="hr-card">
+                            <i class="fas fa-heartbeat vital-icon"></i>
+                            <h3>Heart Rate (HR)</h3>
+                            <p class="vital-value" id="current-hr">-- <small>BPM</small></p>
+                            <p class="vital-status" id="hr-status"><i class="fas fa-sync-alt"></i> Connecting...</p>
+                            <p class="last-update">Last Update: <span id="hr-last-update">Waiting for data...</span></p>
+                        </div>
+
+                        <div class="vital-card normal" id="temp-card">
+                            <i class="fas fa-thermometer-half vital-icon"></i>
+                            <h3>Body Temperature</h3>
+                            <p class="vital-value" id="current-temp">-- <small>°C</small></p>
+                            <p class="vital-status" id="temp-status"><i class="fas fa-sync-alt"></i> Connecting...</p>
+                            <p class="last-update">Last Update: <span id="temp-last-update">Waiting for data...</span></p>
+                        </div>
+                    </section>
+
+                    <section class="historical-trends">
+                        <h3>Historical Trends</h3>
+                        <div class="chart-controls">
+                            <label for="chart-selector">Select Vital:</label>
+                            <select id="chart-selector">
+                                <option value="hr">Heart Rate</option>
+                                <option value="temp">Temperature</option>
+                            </select>
+                            <label for="time-range">Time Range:</label>
+                            <select id="time-range">
+                                <option value="24h">Last 24 Hours</option>
+                                <option value="7d">Last 7 Days</option>
+                                <option value="30d">Last 30 Days</option>
+                            </select>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="vitalChart"></canvas>
+                        </div>
+                    </section>
+
+                    <section class="recent-alerts">
+                        <h3>Recent Alerts</h3>
+                        <ul id="alerts-list">
+                            <!-- Alerts will be populated dynamically -->
+                        </ul>
+                        <button class="btn-secondary" onclick="showSection('alert-history')">View All Alerts</button>
+                    </section>
+                </div>
+
+                <!-- Health Prediction Section -->
+                <div class="patient-section" id="health-prediction-section" style="display: none;">
+                    <section class="health-prediction">
+                        <h3>Health Prediction & Risk Assessment</h3>
+                        <div id="prediction-results">
+                            <div class="prediction-card">
+                                <h4><i class="fas fa-info-circle"></i> No Data Available</h4>
+                                <p>Please wait for health data to be collected to generate predictions.</p>
+                            </div>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="predictionChart"></canvas>
+                        </div>
+                    </section>
+                    <button class="btn-secondary" onclick="showSection('dashboard')">Back to Dashboard</button>
+                </div>
+
+                <!-- Alert History Section -->
+                <div class="patient-section" id="alert-history-section" style="display: none;">
+                    <section class="recent-alerts">
+                        <h3>Alert History</h3>
+                        <ul id="full-alerts-list">
+                            <!-- All alerts will be populated dynamically -->
+                        </ul>
+                        <button class="btn-secondary" onclick="showSection('dashboard')">Back to Dashboard</button>
+                    </section>
+                </div>
+
+                <!-- Reports Section -->
+                <div class="patient-section" id="reports-section" style="display: none;">
+                    <section class="historical-trends">
+                        <h3>Detailed Reports</h3>
+                        <div class="chart-controls">
+                            <label for="report-chart-selector">Select Vital:</label>
+                            <select id="report-chart-selector">
+                                <option value="hr">Heart Rate</option>
+                                <option value="temp">Temperature</option>
+                            </select>
+                            <label for="report-time-range">Time Range:</label>
+                            <select id="report-time-range">
+                                <option value="24h">Last 24 Hours</option>
+                                <option value="7d">Last 7 Days</option>
+                                <option value="30d">Last 30 Days</option>
+                                <option value="90d">Last 90 Days</option>
+                            </select>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="reportChart"></canvas>
+                        </div>
+                    </section>
+                    <button class="btn-secondary" onclick="showSection('dashboard')">Back to Dashboard</button>
+                </div>
+            </div>
+
+            <!-- Doctor Dashboard Content -->
+            <div class="doctor-content" id="doctor-content">
+                <h2>Doctor Dashboard</h2>
+                <p>Welcome to the doctor dashboard. Here you can view all your patients, monitor their health status, and manage their care plans.</p>
+                
+                <div class="vital-signs-grid">
+                    <div class="vital-card">
+                        <i class="fas fa-users vital-icon"></i>
+                        <h3>My Patients</h3>
+                        <p class="vital-value" id="doctor-patient-count">0</p>
+                        <p class="vital-status">Active Patients</p>
+                    </div>
+                    
+                    <div class="vital-card">
+                        <i class="fas fa-bell vital-icon"></i>
+                        <h3>Critical Alerts</h3>
+                        <p class="vital-value" id="doctor-critical-alerts">0</p>
+                        <p class="vital-status">Require Attention</p>
+                    </div>
+                    
+                    <div class="vital-card">
+                        <i class="fas fa-calendar-check vital-icon"></i>
+                        <h3>Appointments Today</h3>
+                        <p class="vital-value">5</p>
+                        <p class="vital-status">Scheduled</p>
+                    </div>
+                    
+                    <div class="vital-card">
+                        <i class="fas fa-file-medical vital-icon"></i>
+                        <h3>Reports Pending</h3>
+                        <p class="vital-value">2</p>
+                        <p class="vital-status">To Review</p>
+                    </div>
+                </div>
+                
+                <section class="recent-alerts">
+                    <h3>Patient Alerts</h3>
+                    <ul id="doctor-alerts-list">
+                        <!-- Alerts will be populated dynamically -->
+                    </ul>
+                    <button class="btn-secondary">View All Patient Alerts</button>
+                </section>
+            </div>
+
+            <!-- Admin Dashboard Content -->
+            <div class="admin-content" id="admin-content">
+                <h2>Administrator Dashboard</h2>
+                <p>Welcome to the administrator dashboard. Here you can manage users, system settings, and view system analytics.</p>
+                
+                <div class="vital-signs-grid">
+                    <div class="vital-card">
+                        <i class="fas fa-users vital-icon"></i>
+                        <h3>Total Users</h3>
+                        <p class="vital-value" id="admin-total-users">0</p>
+                        <p class="vital-status">Registered Users</p>
+                    </div>
+                    
+                    <div class="vital-card">
+                        <i class="fas fa-user-md vital-icon"></i>
+                        <h3>Doctors</h3>
+                        <p class="vital-value" id="admin-doctor-count">0</p>
+                        <p class="vital-status">Active</p>
+                    </div>
+                    
+                    <div class="vital-card">
+                        <i class="fas fa-user-injured vital-icon"></i>
+                        <h3>Patients</h3>
+                        <p class="vital-value" id="admin-patient-count">0</p>
+                        <p class="vital-status">Monitored</p>
+                    </div>
+                    
+                    <div class="vital-card">
+                        <i class="fas fa-server vital-icon"></i>
+                        <h3>System Status</h3>
+                        <p class="vital-value">100%</p>
+                        <p class="vital-status">Operational</p>
+                    </div>
+                </div>
+                
+                <section class="historical-trends">
+                    <h3>System Usage Analytics</h3>
+                    <div class="chart-container">
+                        <canvas id="adminChart"></canvas>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <script>
+    // Firebase Configuration
+    const firebaseConfig = {
+        apiKey: "AIzaSyBUIeH6emUCYmEQfnD5WoAUiUCuqnwpX_k",
+        authDomain: "health-monitoring-9fd5b.firebaseapp.com",
+        databaseURL: "https://health-monitoring-9fd5b-default-rtdb.firebaseio.com",
+        projectId: "health-monitoring-9fd5b",
+        storageBucket: "health-monitoring-9fd5b.appspot.com",
+        messagingSenderId: "403239334681",
+        appId: "1:403239334681:web:8a03109264b3cf7d034b88"
+    };
+
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const database = firebase.database();
+
+    // Current user
+    let currentUser = null;
+
+    // DOM elements
+    const loginPage = document.getElementById('login-page');
+    const registerPage = document.getElementById('register-page');
+    const dashboard = document.getElementById('dashboard');
+    const loginForm = document.getElementById('login-form');
+    const registerForm = document.getElementById('register-form');
+    const roleOptions = document.querySelectorAll('.role-option');
+    const logoutBtn = document.getElementById('logout-btn');
+    const userProfile = document.getElementById('user-profile');
+    const welcomeMessage = document.getElementById('welcome-message');
+    const dashboardTitle = document.getElementById('dashboard-title');
+    const patientContent = document.getElementById('patient-content');
+    const doctorContent = document.getElementById('doctor-content');
+    const adminContent = document.getElementById('admin-content');
+    const loginMessage = document.getElementById('login-message');
+    const registerMessage = document.getElementById('register-message');
+    const connectionStatus = document.getElementById('connection-status');
+
+    // Chart variables
+    let vitalChart = null;
+    let adminChart = null;
+    let reportChart = null;
+    let predictionChart = null;
+
+    // Firebase listeners references
+    let healthDataListener = null;
+
+    // Data history for charts
+    let temperatureHistory = [];
+    let heartRateHistory = [];
+    const maxHistoryPoints = 20;
+
+    // Last known data
+    let lastTemperature = null;
+    let lastHeartRate = null;
+    let lastTemperatureTime = null;
+    let lastHeartRateTime = null;
+
+    // ========== HEALTH PREDICTION MODEL ==========
+    class HealthPredictionModel {
+        constructor() {
+            this.temperatureThresholds = {
+                normal: { min: 36.5, max: 37.5 },
+                warning: { min: 37.6, max: 38.4 },
+                critical: { min: 38.5, max: 42.0 }
+            };
+            
+            this.heartRateThresholds = {
+                normal: { min: 60, max: 100 },
+                warning: { min: 101, max: 120 },
+                critical: { min: 121, max: 200 }
+            };
+            
+            this.conditions = {
+                fever: {
+                    name: "Fever",
+                    description: "Elevated body temperature",
+                    riskFactors: ["temperature"],
+                    calculateRisk: (temp, hr) => {
+                        if (temp >= 38.0) return "high";
+                        if (temp >= 37.5) return "medium";
+                        return "low";
+                    }
+                },
+                tachycardia: {
+                    name: "Tachycardia",
+                    description: "Abnormally high heart rate",
+                    riskFactors: ["heartRate"],
+                    calculateRisk: (temp, hr) => {
+                        if (hr >= 120) return "high";
+                        if (hr >= 100) return "medium";
+                        return "low";
+                    }
+                },
+                bradycardia: {
+                    name: "Bradycardia",
+                    description: "Abnormally low heart rate",
+                    riskFactors: ["heartRate"],
+                    calculateRisk: (temp, hr) => {
+                        if (hr < 50) return "high";
+                        if (hr < 60) return "medium";
+                        return "low";
+                    }
+                },
+                infection: {
+                    name: "Possible Infection",
+                    description: "Elevated temperature with increased heart rate",
+                    riskFactors: ["temperature", "heartRate"],
+                    calculateRisk: (temp, hr) => {
+                        if (temp >= 38.0 && hr >= 100) return "high";
+                        if (temp >= 37.5 && hr >= 90) return "medium";
+                        return "low";
+                    }
+                },
+                dehydration: {
+                    name: "Possible Dehydration",
+                    description: "Elevated heart rate with normal temperature",
+                    riskFactors: ["heartRate"],
+                    calculateRisk: (temp, hr) => {
+                        if (hr >= 100 && temp < 37.5) return "medium";
+                        return "low";
+                    }
+                }
+            };
+        }
+        
+        // Analyze current health data and generate predictions
+        analyzeHealthData(temperature, heartRate) {
+            const predictions = [];
+            
+            // Check each condition
+            for (const conditionKey in this.conditions) {
+                const condition = this.conditions[conditionKey];
+                const riskLevel = condition.calculateRisk(temperature, heartRate);
+                
+                if (riskLevel !== "low") {
+                    predictions.push({
+                        condition: condition.name,
+                        description: condition.description,
+                        riskLevel: riskLevel,
+                        contributingFactors: this.getContributingFactors(condition, temperature, heartRate)
+                    });
+                }
+            }
+            
+            // Sort by risk level (high to low)
+            predictions.sort((a, b) => {
+                const riskOrder = { high: 3, medium: 2, low: 1 };
+                return riskOrder[b.riskLevel] - riskOrder[a.riskLevel];
+            });
+            
+            return predictions;
+        }
+        
+        getContributingFactors(condition, temperature, heartRate) {
+            const factors = [];
+            
+            if (condition.riskFactors.includes("temperature")) {
+                if (temperature >= 38.0) {
+                    factors.push(`High temperature (${temperature.toFixed(1)}°C)`);
+                } else if (temperature >= 37.5) {
+                    factors.push(`Elevated temperature (${temperature.toFixed(1)}°C)`);
+                }
+            }
+            
+            if (condition.riskFactors.includes("heartRate")) {
+                if (heartRate >= 120) {
+                    factors.push(`Very high heart rate (${Math.round(heartRate)} BPM)`);
+                } else if (heartRate >= 100) {
+                    factors.push(`High heart rate (${Math.round(heartRate)} BPM)`);
+                } else if (heartRate < 60) {
+                    factors.push(`Low heart rate (${Math.round(heartRate)} BPM)`);
+                }
+            }
+            
+            return factors;
+        }
+        
+        // Predict future trends based on historical data
+        predictTrends(temperatureHistory, heartRateHistory) {
+            if (temperatureHistory.length < 3 || heartRateHistory.length < 3) {
+                return { temperature: "insufficient data", heartRate: "insufficient data" };
+            }
+            
+            // Simple linear regression for temperature
+            const tempTrend = this.calculateTrend(temperatureHistory.map(d => d.value));
+            const hrTrend = this.calculateTrend(heartRateHistory.map(d => d.value));
+            
+            return {
+                temperature: this.interpretTrend(tempTrend, "temperature"),
+                heartRate: this.interpretTrend(hrTrend, "heartRate")
+            };
+        }
+        
+        calculateTrend(data) {
+            const n = data.length;
+            let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0;
+            
+            for (let i = 0; i < n; i++) {
+                sumX += i;
+                sumY += data[i];
+                sumXY += i * data[i];
+                sumX2 += i * i;
+            }
+            
+            const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
+            return slope;
+        }
+        
+        interpretTrend(slope, type) {
+            if (Math.abs(slope) < 0.05) return "stable";
+            
+            if (type === "temperature") {
+                return slope > 0 ? "increasing" : "decreasing";
+            } else {
+                return slope > 0 ? "increasing" : "decreasing";
+            }
+        }
+    }
+
+    // Initialize the prediction model
+    const healthPredictionModel = new HealthPredictionModel();
+
+    // ========== EVENT LISTENERS ==========
+    document.addEventListener('DOMContentLoaded', function() {
+        // Role selector
+        roleOptions.forEach(option => {
+            option.addEventListener('click', function() {
+                roleOptions.forEach(o => o.classList.remove('active'));
+                this.classList.add('active');
+            });
+        });
+
+        // Form submissions
+        loginForm.addEventListener('submit', handleLogin);
+        registerForm.addEventListener('submit', handleRegistration);
+        
+        // Logout button
+        logoutBtn.addEventListener('click', handleLogout);
+        
+        // Chart selectors
+        const chartSelector = document.getElementById('chart-selector');
+        const timeRange = document.getElementById('time-range');
+        
+        if (chartSelector) {
+            chartSelector.addEventListener('change', updateChart);
+        }
+        
+        if (timeRange) {
+            timeRange.addEventListener('change', updateChart);
+        }
+
+        // Navigation links
+        document.querySelectorAll('.main-nav a').forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                const section = this.getAttribute('data-section');
+                showSection(section);
+                
+                // Update active nav item
+                document.querySelectorAll('.main-nav li').forEach(item => {
+                    item.classList.remove('active');
+                });
+                this.parentElement.classList.add('active');
+            });
+        });
+
+        // OPTIONAL: If you want to check login status but NOT auto-redirect
+        auth.onAuthStateChanged((user) => {
+            if (user) {
+                console.log('User is already logged in:', user.email);
+                // Don't auto-redirect, just log it
+                // showLoginForm(); // Keep showing login page
+            } else {
+                console.log('No user logged in');
+                showLoginForm();
+            }
+        });
+    });
+
+    // ========== REGISTRATION FUNCTIONS ==========
+    function showRegisterForm() {
+        console.log('showRegisterForm function called');
+        loginPage.style.display = 'none';
+        registerPage.style.display = 'flex';
+        registerMessage.innerHTML = '';
+    }
+
+    function showLoginForm() {
+        console.log('showLoginForm function called');
+        registerPage.style.display = 'none';
+        loginPage.style.display = 'flex';
+        dashboard.style.display = 'none';
+        loginMessage.innerHTML = '';
+    }
+
+    function handleRegistration(event) {
+        event.preventDefault();
+        console.log('handleRegistration function called');
+        
+        const name = document.getElementById('reg-name').value;
+        const email = document.getElementById('reg-email').value;
+        const password = document.getElementById('reg-password').value;
+        const role = document.getElementById('reg-role').value;
+        
+        registerMessage.innerHTML = '<div class="loading">Creating account...</div>';
+        
+        // Firebase registration
+        auth.createUserWithEmailAndPassword(email, password)
+            .then((userCredential) => {
+                const user = userCredential.user;
+                
+                // Save user data to database
+                return database.ref('users/' + user.uid).set({
+                    name: name,
+                    email: email,
+                    role: role,
+                    createdAt: new Date().toISOString()
+                });
+            })
+            .then(() => {
+                registerMessage.innerHTML = 
+                    '<div class="success-message">Account created successfully!<br>Name: ' + name + '<br>Email: ' + email + '<br>Role: ' + role + '<br>Redirecting to login...</div>';
+                
+                // Auto switch to login after 3 seconds
+                setTimeout(() => {
+                    showLoginForm();
+                    document.getElementById('username').value = email;
+                    registerMessage.innerHTML = '';
+                }, 3000);
+            })
+            .catch((error) => {
+                console.error('Registration error:', error);
+                registerMessage.innerHTML = '<div class="error-message">' + error.message + '</div>';
+            });
+    }
+
+    // ========== LOGIN FUNCTIONS ==========
+    function handleLogin(event) {
+        event.preventDefault();
+        console.log('handleLogin function called');
+        
+        const email = document.getElementById('username').value;
+        const password = document.getElementById('password').value;
+        const selectedRole = document.querySelector('.role-option.active').dataset.role;
+        
+        loginMessage.innerHTML = '<div class="loading">Logging in...</div>';
+        
+        // Firebase login
+        auth.signInWithEmailAndPassword(email, password)
+            .then((userCredential) => {
+                const user = userCredential.user;
+                
+                // Get user data from database
+                return database.ref('users/' + user.uid).once('value')
+                    .then((snapshot) => {
+                        const userData = snapshot.val();
+                        
+                        // Check if user role matches selected role
+                        if (userData && userData.role === selectedRole) {
+                            currentUser = {
+                                uid: user.uid,
+                                name: userData.name,
+                                email: user.email,
+                                role: userData.role
+                            };
+                            
+                            loginMessage.innerHTML = '<div class="success-message">Login successful! Redirecting to dashboard...</div>';
+                            setTimeout(() => {
+                                showDashboard();
+                            }, 2000);
+                        } else {
+                            auth.signOut();
+                            loginMessage.innerHTML = '<div class="error-message">Role mismatch. Please select the correct role for your account.</div>';
+                        }
+                    });
+            })
+            .catch((error) => {
+                console.error('Login error:', error);
+                loginMessage.innerHTML = '<div class="error-message">' + error.message + '</div>';
+            });
+    }
+
+    // ========== DASHBOARD FUNCTIONS ==========
+    function showDashboard() {
+        loginPage.style.display = 'none';
+        registerPage.style.display = 'none';
+        dashboard.style.display = 'flex';
+        
+        // Update UI based on user role
+        welcomeMessage.textContent = `Welcome, ${currentUser.name}`;
+        updateUserProfile();
+        
+        // Show appropriate content based on role
+        patientContent.style.display = 'none';
+        doctorContent.style.display = 'none';
+        adminContent.style.display = 'none';
+        
+        if (currentUser.role === 'patient') {
+            dashboardTitle.textContent = 'Patient Health Overview';
+            patientContent.style.display = 'block';
+            initializePatientDashboard();
+            updateSidebarForPatient();
+        } else if (currentUser.role === 'doctor') {
+            dashboardTitle.textContent = 'Doctor Dashboard';
+            doctorContent.style.display = 'block';
+            initializeDoctorDashboard();
+            updateSidebarForDoctor();
+        } else if (currentUser.role === 'admin') {
+            dashboardTitle.textContent = 'Administrator Dashboard';
+            adminContent.style.display = 'block';
+            initializeAdminDashboard();
+            updateSidebarForAdmin();
+        }
+    }
+
+    function updateSidebarForPatient() {
+        // Hide doctor and admin specific items
+        document.querySelectorAll('.doctor-only, .admin-only').forEach(item => {
+            item.style.display = 'none';
+        });
+        // Show patient specific items
+        document.querySelectorAll('.patient-only').forEach(item => {
+            item.style.display = 'block';
+        });
+    }
+
+    function updateSidebarForDoctor() {
+        // Hide patient and admin specific items
+        document.querySelectorAll('.patient-only, .admin-only').forEach(item => {
+            item.style.display = 'none';
+        });
+        // Show doctor specific items
+        document.querySelectorAll('.doctor-only').forEach(item => {
+            item.style.display = 'block';
+        });
+    }
+
+    function updateSidebarForAdmin() {
+        // Hide patient specific items
+        document.querySelectorAll('.patient-only').forEach(item => {
+            item.style.display = 'none';
+        });
+        // Show doctor and admin specific items
+        document.querySelectorAll('.doctor-only, .admin-only').forEach(item => {
+            item.style.display = 'block';
+        });
+    }
+
+    function updateUserProfile() {
+        let profileHTML = '';
+        
+        if (currentUser.role === 'patient') {
+            profileHTML = `
+                <h3>Patient Info</h3>
+                <p><strong>Name:</strong> ${currentUser.name}</p>
+                <p><strong>Email:</strong> ${currentUser.email}</p>
+                <p><strong>ID:</strong> ${currentUser.uid.substring(0, 8)}</p>
+                <button class="btn-primary">View Full Profile</button>
+            `;
+        } else if (currentUser.role === 'doctor') {
+            profileHTML = `
+                <h3>Doctor Info</h3>
+                <p><strong>Name:</strong> ${currentUser.name}</p>
+                <p><strong>Email:</strong> ${currentUser.email}</p>
+                <p><strong>ID:</strong> ${currentUser.uid.substring(0, 8)}</p>
+                <button class="btn-primary">My Profile</button>
+            `;
+        } else if (currentUser.role === 'admin') {
+            profileHTML = `
+                <h3>Admin Profile</h3>
+                <p><strong>Name:</strong> ${currentUser.name}</p>
+                <p><strong>Email:</strong> ${currentUser.email}</p>
+                <p><strong>ID:</strong> ${currentUser.uid.substring(0, 8)}</p>
+                <button class="btn-primary">System Settings</button>
+            `;
+        }
+        
+        userProfile.innerHTML = profileHTML;
+    }
+
+    function handleLogout() {
+        // Remove Firebase listeners
+        if (healthDataListener) {
+            database.ref('healthData').off('value', healthDataListener);
+            healthDataListener = null;
+        }
+        
+        auth.signOut()
+            .then(() => {
+                currentUser = null;
+                showLoginForm();
+            })
+            .catch((error) => {
+                console.error('Logout error:', error);
+            });
+    }
+
+    // ========== PATIENT DASHBOARD FUNCTIONS ==========
+    function initializePatientDashboard() {
+        console.log('Initializing patient dashboard...');
+        
+        // Initialize charts
+        initializeVitalChart();
+        initializeReportChart();
+        initializePredictionChart();
+        
+        // Test Firebase connection first
+        testFirebaseConnection();
+        
+        // Set up real-time listeners from Arduino
+        setupRealTimeListeners();
+        
+        // Populate alerts
+        populateAlerts();
+        populateFullAlerts();
+        
+        // Show dashboard section by default
+        showSection('dashboard');
+    }
+
+    function testFirebaseConnection() {
+        console.log('Testing Firebase connection to healthData...');
+        updateConnectionStatus('connecting', 'Testing connection...');
+        
+        // Test reading from healthData
+        database.ref('healthData').once('value')
+            .then((snapshot) => {
+                const healthData = snapshot.val();
+                console.log('Full healthData from Firebase:', healthData);
+                
+                if (healthData) {
+                    if (healthData.temperature !== undefined && healthData.temperature !== null) {
+                        console.log('✅ Temperature data found:', healthData.temperature);
+                        // Update display immediately
+                        updateTemperatureDisplay(healthData.temperature, new Date());
+                    } else {
+                        console.log('❌ No temperature data in healthData');
+                    }
+                    
+                    if (healthData.bpm !== undefined && healthData.bpm !== null) {
+                        console.log('✅ Heart rate data found:', healthData.bpm);
+                        // Update display immediately
+                        updateHeartRateDisplay(healthData.bpm, new Date());
+                    } else {
+                        console.log('❌ No heart rate data in healthData');
+                    }
+                    updateConnectionStatus('connected', 'Connected to Firebase');
+                } else {
+                    console.log('❌ No healthData found at all');
+                    updateConnectionStatus('disconnected', 'No data in Firebase');
+                }
+            })
+            .catch((error) => {
+                console.error('❌ Error reading healthData:', error);
+                updateConnectionStatus('disconnected', 'Connection failed');
+            });
+    }
+
+    function updateConnectionStatus(status, message) {
+        const statusElement = document.getElementById('connection-status');
+        statusElement.className = `connection-status ${status}`;
+        statusElement.innerHTML = `<i class="fas fa-${status === 'connected' ? 'check-circle' : status === 'connecting' ? 'sync-alt' : 'exclamation-triangle'}"></i> ${message}`;
+    }
+
+    function showSection(sectionName) {
+        // Hide all sections
+        document.querySelectorAll('.patient-section').forEach(section => {
+            section.style.display = 'none';
+        });
+        
+        // Show the selected section
+        document.getElementById(`${sectionName}-section`).style.display = 'block';
+        
+        // Update dashboard title based on section
+        if (sectionName === 'dashboard') {
+            dashboardTitle.textContent = 'Patient Health Overview';
+        } else if (sectionName === 'health-prediction') {
+            dashboardTitle.textContent = 'Health Prediction & Risk Assessment';
+            updateHealthPrediction();
+        } else if (sectionName === 'alert-history') {
+            dashboardTitle.textContent = 'Alert History';
+        } else if (sectionName === 'reports') {
+            dashboardTitle.textContent = 'Health Reports';
+            updateReportChart();
+        }
+    }
+
+    // ========== ENHANCED REAL-TIME LISTENERS ==========
+    function setupRealTimeListeners() {
+        console.log('Setting up enhanced real-time listeners...');
+        
+        // Listen to entire healthData node for better reliability
+        healthDataListener = database.ref('healthData').on('value', (snapshot) => {
+            const healthData = snapshot.val();
+            const now = new Date();
+            
+            if (healthData) {
+                console.log('📡 Full healthData update:', healthData);
+                
+                // Update temperature if available
+                if (healthData.temperature !== undefined && healthData.temperature !== null) {
+                    console.log('🔥 Temperature update:', healthData.temperature);
+                    lastTemperature = healthData.temperature;
+                    lastTemperatureTime = now;
+                    updateTemperatureDisplay(healthData.temperature, now);
+                    addTemperatureToHistory(healthData.temperature, now);
+                }
+                
+                // Update heart rate if available
+                if (healthData.bpm !== undefined && healthData.bpm !== null) {
+                    console.log('❤ BPM update:', healthData.bpm);
+                    lastHeartRate = healthData.bpm;
+                    lastHeartRateTime = now;
+                    updateHeartRateDisplay(healthData.bpm, now);
+                    addHeartRateToHistory(healthData.bpm, now);
+                }
+                
+                updateConnectionStatus('connected', 'Receiving real-time data');
+                
+                // Update health prediction if we have both values
+                if (lastTemperature !== null && lastHeartRate !== null) {
+                    updateHealthPrediction();
+                }
+            } else {
+                console.log('No health data available');
+                updateConnectionStatus('disconnected', 'No data available');
+            }
+        }, (error) => {
+            console.error('Health data listener error:', error);
+            updateConnectionStatus('disconnected', 'Connection error');
+        });
+    }
+
+    function updateTemperatureDisplay(temperature, timestamp) {
+        if (temperature !== null && temperature !== undefined) {
+            document.getElementById('current-temp').textContent = temperature.toFixed(1) + ' °C';
+            updateTemperatureStatus(temperature);
+            
+            const timeString = timestamp.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            document.getElementById('temp-last-update').textContent = timeString;
+            
+            document.getElementById('temp-status').innerHTML = '<i class="fas fa-check-circle"></i> Live Data';
+        }
+    }
+
+    function updateHeartRateDisplay(bpm, timestamp) {
+        if (bpm !== null && bpm !== undefined) {
+            // Only show BPM if it's greater than 0 (valid reading)
+            if (bpm > 0) {
+                document.getElementById('current-hr').textContent = Math.round(bpm) + ' BPM';
+                updateHeartRateStatus(bpm);
+            } else {
+                document.getElementById('current-hr').textContent = '-- BPM';
+                document.getElementById('hr-status').innerHTML = '<i class="fas fa-heartbeat"></i> No Pulse';
+            }
+            
+            const timeString = timestamp.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            document.getElementById('hr-last-update').textContent = timeString;
+            
+            if (bpm > 0) {
+                document.getElementById('hr-status').innerHTML = '<i class="fas fa-check-circle"></i> Live Data';
+            }
+        }
+    }
+
+    function addTemperatureToHistory(temperature, timestamp) {
+        if (temperature !== null && temperature !== undefined) {
+            temperatureHistory.push({
+                value: temperature,
+                timestamp: timestamp,
+                time: timestamp.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
+            });
+            
+            // Keep only the last maxHistoryPoints
+            if (temperatureHistory.length > maxHistoryPoints) {
+                temperatureHistory = temperatureHistory.slice(-maxHistoryPoints);
+            }
+            
+            // Update chart if temperature is selected
+            updateTemperatureChart();
+        }
+    }
+
+    function addHeartRateToHistory(bpm, timestamp) {
+        if (bpm !== null && bpm !== undefined && bpm > 0) {
+            heartRateHistory.push({
+                value: bpm,
+                timestamp: timestamp,
+                time: timestamp.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
+            });
+            
+            // Keep only the last maxHistoryPoints
+            if (heartRateHistory.length > maxHistoryPoints) {
+                heartRateHistory = heartRateHistory.slice(-maxHistoryPoints);
+            }
+            
+            // Update chart if heart rate is selected
+            updateHeartRateChart();
+        }
+    }
+
+    function updateTemperatureStatus(temperature) {
+        let status = 'normal';
+        let icon = 'fa-check-circle';
+        let message = 'Normal';
+        
+        if (temperature > 38.5) {
+            status = 'critical';
+            icon = 'fa-exclamation-triangle';
+            message = 'High Temperature';
+            triggerTemperatureAlert(temperature);
+        } else if (temperature < 36.0) {
+            status = 'critical';
+            icon = 'fa-exclamation-triangle';
+            message = 'Low Temperature';
+            triggerTemperatureAlert(temperature);
+        } else if (temperature > 37.5) {
+            status = 'warning';
+            icon = 'fa-exclamation-circle';
+            message = 'Elevated';
+        } else if (temperature < 36.5) {
+            status = 'warning';
+            icon = 'fa-exclamation-circle';
+            message = 'Low';
+        }
+        
+        const tempCard = document.getElementById('temp-card');
+        tempCard.className = `vital-card ${status}`;
+        
+        const statusElement = document.getElementById('temp-status');
+        statusElement.innerHTML = `<i class="fas ${icon}"></i> ${message}`;
+    }
+
+    function updateHeartRateStatus(bpm) {
+        let status = 'normal';
+        let icon = 'fa-check-circle';
+        let message = 'Normal';
+        
+        if (bpm > 100) {
+            status = 'critical';
+            icon = 'fa-exclamation-triangle';
+            message = 'High Heart Rate';
+            triggerHeartRateAlert(bpm);
+        } else if (bpm < 60) {
+            status = 'critical';
+            icon = 'fa-exclamation-triangle';
+            message = 'Low Heart Rate';
+            triggerHeartRateAlert(bpm);
+        } else if (bpm > 90) {
+            status = 'warning';
+            icon = 'fa-exclamation-circle';
+            message = 'Elevated';
+        } else if (bpm < 70) {
+            status = 'warning';
+            icon = 'fa-exclamation-circle';
+            message = 'Low';
+        }
+        
+        const hrCard = document.getElementById('hr-card');
+        hrCard.className = `vital-card ${status}`;
+        
+        const statusElement = document.getElementById('hr-status');
+        statusElement.innerHTML = `<i class="fas ${icon}"></i> ${message}`;
+    }
+
+    function triggerTemperatureAlert(temperature) {
+        const alertBanner = document.getElementById('alert-banner');
+        const alertMessage = document.getElementById('alert-message');
+        
+        let alertText = '';
+        if (temperature > 38.5) {
+            alertText = `CRITICAL ALERT! High Temperature Detected: ${temperature.toFixed(1)}°C - Check Patient NOW!`;
+        } else if (temperature < 36) {
+            alertText = `CRITICAL ALERT! Low Temperature Detected: ${temperature.toFixed(1)}°C - Check Patient NOW!`;
+        }
+        
+        alertMessage.textContent = alertText;
+        alertBanner.classList.remove('hidden');
+        
+        // Add to alerts list
+        addToAlertsList(alertText);
+    }
+
+    function triggerHeartRateAlert(bpm) {
+        const alertBanner = document.getElementById('alert-banner');
+        const alertMessage = document.getElementById('alert-message');
+        
+        let alertText = '';
+        if (bpm > 100) {
+            alertText = `CRITICAL ALERT! High Heart Rate Detected: ${Math.round(bpm)} BPM - Check Patient NOW!`;
+        } else if (bpm < 60) {
+            alertText = `CRITICAL ALERT! Low Heart Rate Detected: ${Math.round(bpm)} BPM - Check Patient NOW!`;
+        }
+        
+        alertMessage.textContent = alertText;
+        alertBanner.classList.remove('hidden');
+        
+        // Add to alerts list
+        addToAlertsList(alertText);
+    }
+
+    function addToAlertsList(message) {
+        const alertsList = document.getElementById('alerts-list');
+        const fullAlertsList = document.getElementById('full-alerts-list');
+        
+        const now = new Date();
+        const timeString = now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+        const dateString = now.toLocaleDateString();
+        
+        const alertItem = document.createElement('li');
+        alertItem.innerHTML = `
+            <span class="alert-time">${timeString}</span>
+            <span class="alert-type critical">CRITICAL</span>
+            <span>${message}</span>
+        `;
+        
+        // Add to recent alerts (keep only last 5)
+        if (alertsList.children.length >= 5) {
+            alertsList.removeChild(alertsList.lastChild);
+        }
+        alertsList.insertBefore(alertItem, alertsList.firstChild);
+        
+        // Add to full alerts list
+        const fullAlertItem = alertItem.cloneNode(true);
+        if (fullAlertsList.children.length >= 20) {
+            fullAlertsList.removeChild(fullAlertsList.lastChild);
+        }
+        fullAlertsList.insertBefore(fullAlertItem, fullAlertsList.firstChild);
+    }
+
+    function updateTemperatureChart() {
+        if (vitalChart && document.getElementById('chart-selector').value === 'temp') {
+            const labels = temperatureHistory.map(item => item.time);
+            const data = temperatureHistory.map(item => item.value);
+            
+            vitalChart.data.labels = labels;
+            vitalChart.data.datasets[0].data = data;
+            vitalChart.data.datasets[0].label = 'Temperature (°C)';
+            vitalChart.data.datasets[0].borderColor = '#e74c3c';
+            vitalChart.data.datasets[0].backgroundColor = 'rgba(231, 76, 60, 0.1)';
+            vitalChart.options.scales.y.suggestedMin = 35;
+            vitalChart.options.scales.y.suggestedMax = 40;
+            vitalChart.update();
+        }
+    }
+
+    function updateHeartRateChart() {
+        if (vitalChart && document.getElementById('chart-selector').value === 'hr') {
+            const labels = heartRateHistory.map(item => item.time);
+            const data = heartRateHistory.map(item => item.value);
+            
+            vitalChart.data.labels = labels;
+            vitalChart.data.datasets[0].data = data;
+            vitalChart.data.datasets[0].label = 'Heart Rate (BPM)';
+            vitalChart.data.datasets[0].borderColor = '#3498db';
+            vitalChart.data.datasets[0].backgroundColor = 'rgba(52, 152, 219, 0.1)';
+            vitalChart.options.scales.y.suggestedMin = 60;
+            vitalChart.options.scales.y.suggestedMax = 100;
+            vitalChart.update();
+        }
+    }
+
+    function initializeVitalChart() {
+        const ctx = document.getElementById('vitalChart').getContext('2d');
+        
+        vitalChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Select a vital to view data',
+                    data: [],
+                    borderColor: '#95a5a6',
+                    backgroundColor: 'rgba(149, 165, 166, 0.1)',
+                    borderWidth: 2,
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: false
+                    }
+                }
+            }
+        });
+    }
+
+    function initializeReportChart() {
+        const ctx = document.getElementById('reportChart').getContext('2d');
+        
+        reportChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Select a vital to view data',
+                    data: [],
+                    borderColor: '#95a5a6',
+                    backgroundColor: 'rgba(149, 165, 166, 0.1)',
+                    borderWidth: 2,
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: false
+                    }
+                }
+            }
+        });
+    }
+
+    function initializePredictionChart() {
+        const ctx = document.getElementById('predictionChart').getContext('2d');
+        
+        predictionChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['Fever', 'Tachycardia', 'Bradycardia', 'Infection', 'Dehydration'],
+                datasets: [{
+                    label: 'Risk Level',
+                    data: [0, 0, 0, 0, 0],
+                    backgroundColor: [
+                        'rgba(52, 152, 219, 0.7)',
+                        'rgba(52, 152, 219, 0.7)',
+                        'rgba(52, 152, 219, 0.7)',
+                        'rgba(52, 152, 219, 0.7)',
+                        'rgba(52, 152, 219, 0.7)'
+                    ],
+                    borderColor: [
+                        'rgba(52, 152, 219, 1)',
+                        'rgba(52, 152, 219, 1)',
+                        'rgba(52, 152, 219, 1)',
+                        'rgba(52, 152, 219, 1)',
+                        'rgba(52, 152, 219, 1)'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 3,
+                        ticks: {
+                            stepSize: 1,
+                            callback: function(value) {
+                                const labels = ['', 'Low', 'Medium', 'High'];
+                                return labels[value];
+                            }
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const labels = ['', 'Low Risk', 'Medium Risk', 'High Risk'];
+                                return labels[context.parsed.y];
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    function updateChart() {
+        const vitalType = document.getElementById('chart-selector').value;
+        
+        if (vitalType === 'temp' && temperatureHistory.length > 0) {
+            updateTemperatureChart();
+        } else if (vitalType === 'hr' && heartRateHistory.length > 0) {
+            updateHeartRateChart();
+        } else {
+            vitalChart.data.labels = ['No Data Available'];
+            vitalChart.data.datasets[0].data = [0];
+            vitalChart.data.datasets[0].label = `${vitalType.toUpperCase()} - No Data`;
+            vitalChart.data.datasets[0].borderColor = '#95a5a6';
+            vitalChart.data.datasets[0].backgroundColor = 'rgba(149, 165, 166, 0.1)';
+            vitalChart.update();
+        }
+    }
+
+    function updateReportChart() {
+        const vitalType = document.getElementById('report-chart-selector').value;
+        
+        if ((vitalType === 'temp' && temperatureHistory.length > 0) || 
+            (vitalType === 'hr' && heartRateHistory.length > 0)) {
+            
+            let data = [];
+            let labels = [];
+            let color = '#3498db';
+            let label = '';
+            
+            if (vitalType === 'temp') {
+                data = temperatureHistory.map(item => item.value);
+                labels = temperatureHistory.map(item => item.time);
+                color = '#e74c3c';
+                label = 'Temperature (°C)';
+            } else if (vitalType === 'hr') {
+                data = heartRateHistory.map(item => item.value);
+                labels = heartRateHistory.map(item => item.time);
+                color = '#3498db';
+                label = 'Heart Rate (BPM)';
+            }
+            
+            reportChart.data.labels = labels;
+            reportChart.data.datasets[0].label = label;
+            reportChart.data.datasets[0].data = data;
+            reportChart.data.datasets[0].borderColor = color;
+            reportChart.data.datasets[0].backgroundColor = color.replace(')', ', 0.1)').replace('rgb', 'rgba');
+            reportChart.update();
+        } else {
+            reportChart.data.labels = ['No Data Available'];
+            reportChart.data.datasets[0].data = [0];
+            reportChart.data.datasets[0].label = `${vitalType.toUpperCase()} - No Data`;
+            reportChart.data.datasets[0].borderColor = '#95a5a6';
+            reportChart.data.datasets[0].backgroundColor = 'rgba(149, 165, 166, 0.1)';
+            reportChart.update();
+        }
+    }
+
+    // ========== HEALTH PREDICTION FUNCTIONS ==========
+    function updateHealthPrediction() {
+        if (lastTemperature === null || lastHeartRate === null) {
+            document.getElementById('prediction-results').innerHTML = `
+                <div class="prediction-card">
+                    <h4><i class="fas fa-info-circle"></i> No Data Available</h4>
+                    <p>Please wait for health data to be collected to generate predictions.</p>
+                </div>
+            `;
+            return;
+        }
+        
+        // Get predictions from the model
+        const predictions = healthPredictionModel.analyzeHealthData(lastTemperature, lastHeartRate);
+        const trends = healthPredictionModel.predictTrends(temperatureHistory, heartRateHistory);
+        
+        let predictionHTML = '';
+        
+        if (predictions.length === 0) {
+            predictionHTML = `
+                <div class="prediction-card normal">
+                    <h4><i class="fas fa-check-circle"></i> Good Health Status</h4>
+                    <p>Your current temperature and heart rate readings are within normal ranges.</p>
+                    <p><strong>Current Readings:</strong> Temperature: ${lastTemperature.toFixed(1)}°C, Heart Rate: ${Math.round(lastHeartRate)} BPM</p>
+                    <span class="prediction-risk risk-low">Low Risk</span>
+                </div>
+            `;
+        } else {
+            predictions.forEach(prediction => {
+                const riskClass = `risk-${prediction.riskLevel}`;
+                const cardClass = prediction.riskLevel === 'high' ? 'critical' : 
+                                 prediction.riskLevel === 'medium' ? 'warning' : 'normal';
+                
+                predictionHTML += `
+                    <div class="prediction-card ${cardClass}">
+                        <h4><i class="fas fa-${prediction.riskLevel === 'high' ? 'exclamation-triangle' : 
+                                              prediction.riskLevel === 'medium' ? 'exclamation-circle' : 'info-circle'}"></i> 
+                            ${prediction.condition}
+                        </h4>
+                        <p>${prediction.description}</p>
+                        <p><strong>Contributing Factors:</strong> ${prediction.contributingFactors.join(', ')}</p>
+                        <span class="prediction-risk ${riskClass}">${prediction.riskLevel.toUpperCase()} RISK</span>
+                    </div>
+                `;
+            });
+        }
+        
+        // Add trend information
+        predictionHTML += `
+            <div class="prediction-card">
+                <h4><i class="fas fa-chart-line"></i> Trend Analysis</h4>
+                <p><strong>Temperature:</strong> ${trends.temperature === 'insufficient data' ? 'Insufficient data for trend analysis' : 
+                    trends.temperature === 'increasing' ? 'Increasing trend detected' : 
+                    trends.temperature === 'decreasing' ? 'Decreasing trend detected' : 'Stable'}</p>
+                <p><strong>Heart Rate:</strong> ${trends.heartRate === 'insufficient data' ? 'Insufficient data for trend analysis' : 
+                    trends.heartRate === 'increasing' ? 'Increasing trend detected' : 
+                    trends.heartRate === 'decreasing' ? 'Decreasing trend detected' : 'Stable'}</p>
+            </div>
+        `;
+        
+        document.getElementById('prediction-results').innerHTML = predictionHTML;
+        
+        // Update prediction chart
+        updatePredictionChart(predictions);
+    }
+
+    function updatePredictionChart(predictions) {
+        if (!predictionChart) return;
+        
+        // Reset all values to 0
+        const data = [0, 0, 0, 0, 0];
+        
+        // Map predictions to chart data
+        predictions.forEach(prediction => {
+            const riskValue = prediction.riskLevel === 'high' ? 3 : 
+                             prediction.riskLevel === 'medium' ? 2 : 1;
+            
+            if (prediction.condition === "Fever") data[0] = riskValue;
+            else if (prediction.condition === "Tachycardia") data[1] = riskValue;
+            else if (prediction.condition === "Bradycardia") data[2] = riskValue;
+            else if (prediction.condition === "Possible Infection") data[3] = riskValue;
+            else if (prediction.condition === "Possible Dehydration") data[4] = riskValue;
+        });
+        
+        // Update chart colors based on risk levels
+        const backgroundColors = data.map(value => {
+            if (value === 3) return 'rgba(231, 76, 60, 0.7)';
+            if (value === 2) return 'rgba(243, 156, 18, 0.7)';
+            if (value === 1) return 'rgba(39, 174, 96, 0.7)';
+            return 'rgba(52, 152, 219, 0.7)';
+        });
+        
+        const borderColors = data.map(value => {
+            if (value === 3) return 'rgba(231, 76, 60, 1)';
+            if (value === 2) return 'rgba(243, 156, 18, 1)';
+            if (value === 1) return 'rgba(39, 174, 96, 1)';
+            return 'rgba(52, 152, 219, 1)';
+        });
+        
+        predictionChart.data.datasets[0].data = data;
+        predictionChart.data.datasets[0].backgroundColor = backgroundColors;
+        predictionChart.data.datasets[0].borderColor = borderColors;
+        predictionChart.update();
+    }
+
+    function refreshData() {
+        console.log('Manual refresh triggered...');
+        updateConnectionStatus('connecting', 'Refreshing data...');
+        
+        // Clear existing data
+        temperatureHistory = [];
+        heartRateHistory = [];
+        
+        // Reset displays
+        document.getElementById('current-temp').textContent = '-- °C';
+        document.getElementById('temp-status').innerHTML = '<i class="fas fa-sync-alt"></i> Refreshing...';
+        document.getElementById('temp-last-update').textContent = 'Refreshing data...';
+        
+        document.getElementById('current-hr').textContent = '-- BPM';
+        document.getElementById('hr-status').innerHTML = '<i class="fas fa-sync-alt"></i> Refreshing...';
+        document.getElementById('hr-last-update').textContent = 'Refreshing data...';
+        
+        // Test connection again
+        testFirebaseConnection();
+    }
+
+    function populateAlerts() {
+        const alertsList = document.getElementById('alerts-list');
+        alertsList.innerHTML = '<li>No recent alerts</li>';
+    }
+
+    function populateFullAlerts() {
+        const alertsList = document.getElementById('full-alerts-list');
+        alertsList.innerHTML = '<li>No alert history</li>';
+    }
+
+    function closeAlert() {
+        const alertBanner = document.getElementById('alert-banner');
+        alertBanner.classList.add('hidden');
+    }
+
+    // ========== DEBUG FUNCTION ==========
+    function testFirebaseConnection() {
+        console.log('=== DEBUG: Testing Firebase Connection ===');
+        database.ref('healthData').once('value')
+            .then((snapshot) => {
+                const data = snapshot.val();
+                console.log('Current Firebase data:', data);
+                alert('Firebase Debug Info:\n\nCheck browser console for detailed data.\n\nCurrent data: ' + JSON.stringify(data, null, 2));
+            })
+            .catch((error) => {
+                console.error('Debug error:', error);
+                alert('Error reading Firebase: ' + error.message);
+            });
+    }
+
+    // ========== DOCTOR DASHBOARD FUNCTIONS ==========
+    function initializeDoctorDashboard() {
+        document.getElementById('doctor-patient-count').textContent = '12';
+        document.getElementById('doctor-critical-alerts').textContent = '3';
+        populateDoctorAlerts();
+    }
+
+    function populateDoctorAlerts() {
+        const alertsList = document.getElementById('doctor-alerts-list');
+        const alerts = [
+            { patient: 'John Smith', type: 'critical', message: 'High heart rate (110 BPM)', time: '10:15 AM' },
+            { patient: 'Sarah Johnson', type: 'warning', message: 'Low oxygen saturation (92%)', time: '9:30 AM' },
+            { patient: 'Michael Brown', type: 'critical', message: 'High blood pressure (150/95)', time: '9:15 AM' },
+            { patient: 'Emily Davis', type: 'warning', message: 'Elevated temperature (38.2°C)', time: 'Yesterday, 5:45 PM' }
+        ];
+        
+        alertsList.innerHTML = '';
+        alerts.forEach(alert => {
+            const li = document.createElement('li');
+            li.innerHTML = `
+                <span class="alert-time">${alert.time}</span>
+                <span class="alert-type ${alert.type}">${alert.type.toUpperCase()}</span>
+                <span><strong>${alert.patient}:</strong> ${alert.message}</span>
+            `;
+            alertsList.appendChild(li);
+        });
+    }
+
+    // ========== ADMIN DASHBOARD FUNCTIONS ==========
+    function initializeAdminDashboard() {
+        document.getElementById('admin-total-users').textContent = '47';
+        document.getElementById('admin-doctor-count').textContent = '8';
+        document.getElementById('admin-patient-count').textContent = '35';
+        initializeAdminChart();
+    }
+
+    function initializeAdminChart() {
+        const ctx = document.getElementById('adminChart').getContext('2d');
+        const labels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
+        const userData = [25, 30, 35, 38, 42, 47];
+        const alertData = [120, 150, 130, 160, 180, 200];
+        
+        adminChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'Total Users',
+                        data: userData,
+                        backgroundColor: 'rgba(52, 152, 219, 0.7)',
+                        borderColor: 'rgba(52, 152, 219, 1)',
+                        borderWidth: 1
+                    },
+                    {
+                        label: 'Monthly Alerts',
+                        data: alertData,
+                        backgroundColor: 'rgba(231, 76, 60, 0.7)',
+                        borderColor: 'rgba(231, 76, 60, 1)',
+                        borderWidth: 1
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    }
+    </script>
+</body>
+</html>
